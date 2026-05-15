@@ -1,0 +1,241 @@
+#include <iostream>
+#include <stack>
+#include <algorithm>
+
+using namespace std;
+
+struct Node {
+    int data;
+    Node *left, *right;
+    int height;
+
+    Node(int val) {
+        data = val;
+        left = right = nullptr;
+        height = 1;
+    }
+};
+
+class AVL {
+public:
+    Node* root;
+
+    AVL() { root = nullptr; }
+
+    int getHeight(Node* n) {
+        return n ? n->height : 0;
+    }
+
+    int getBalance(Node* n) {
+        return n ? getHeight(n->left) - getHeight(n->right) : 0;
+    }
+
+    Node* rightRotate(Node* y) {
+        Node* x = y->left;
+        Node* T2 = x->right;
+
+        x->right = y;
+        y->left = T2;
+
+        y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+        x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+
+        return x;
+    }
+
+    Node* leftRotate(Node* x) {
+        Node* y = x->right;
+        Node* T2 = y->left;
+
+        y->left = x;
+        x->right = T2;
+
+        x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+        y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+
+        return y;
+    }
+
+    Node* insert(Node* node, int val) {
+        if (!node) return new Node(val);
+
+        if (val < node->data)
+            node->left = insert(node->left, val);
+        else if (val > node->data)
+            node->right = insert(node->right, val);
+        else
+            return node;
+
+        node->height = 1 + max(getHeight(node->left), getHeight(node->right));
+
+        int balance = getBalance(node);
+
+        if (balance > 1 && val < node->left->data)
+            return rightRotate(node);
+
+        if (balance < -1 && val > node->right->data)
+            return leftRotate(node);
+
+        if (balance > 1 && val > node->left->data) {
+            node->left = leftRotate(node->left);
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && val < node->right->data) {
+            node->right = rightRotate(node->right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+    void recursiveInorder(Node* root) {
+        if (!root) return;
+        recursiveInorder(root->left);
+        cout << root->data << " ";
+        recursiveInorder(root->right);
+    }
+
+    void recursivePreorder(Node* root) {
+        if (!root) return;
+        cout << root->data << " ";
+        recursivePreorder(root->left);
+        recursivePreorder(root->right);
+    }
+
+    void recursivePostorder(Node* root) {
+        if (!root) return;
+        recursivePostorder(root->left);
+        recursivePostorder(root->right);
+        cout << root->data << " ";
+    }
+
+    void iterativeInorder(Node* root) {
+        stack<Node*> s;
+        Node* curr = root;
+        while (curr || !s.empty()) {
+            while (curr) {
+                s.push(curr);
+                curr = curr->left;
+            }
+            curr = s.top();
+            s.pop();
+            cout << curr->data << " ";
+            curr = curr->right;
+        }
+    }
+
+    void iterativePreorder(Node* root) {
+        if (!root) return;
+        stack<Node*> s;
+        s.push(root);
+        while (!s.empty()) {
+            Node* curr = s.top();
+            s.pop();
+            cout << curr->data << " ";
+            if (curr->right) s.push(curr->right);
+            if (curr->left) s.push(curr->left);
+        }
+    }
+
+    void iterativePostorder(Node* root) {
+        if (!root) return;
+        stack<Node*> s1, s2;
+        s1.push(root);
+        while (!s1.empty()) {
+            Node* curr = s1.top();
+            s1.pop();
+            s2.push(curr);
+            if (curr->left) s1.push(curr->left);
+            if (curr->right) s1.push(curr->right);
+        }
+        while (!s2.empty()) {
+            cout << s2.top()->data << " ";
+            s2.pop();
+        }
+    }
+};
+
+int main() {
+    AVL tree;
+    int choice, val;
+
+    do {
+        cout << "\n--- AVL Tree Operations ---";
+        cout << "\n1. Insert Node\n2. Recursive Traversals\n3. Non-Recursive Traversals\n4. Exit";
+        cout << "\nEnter Choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                cout << "Enter value: ";
+                cin >> val;
+                tree.root = tree.insert(tree.root, val);
+                break;
+            case 2:
+                cout << "\nInorder: "; tree.recursiveInorder(tree.root);
+                cout << "\nPreorder: "; tree.recursivePreorder(tree.root);
+                cout << "\nPostorder: "; tree.recursivePostorder(tree.root);
+                cout << endl;
+                break;
+            case 3:
+                cout << "\nIterative Inorder: "; tree.iterativeInorder(tree.root);
+                cout << "\nIterative Preorder: "; tree.iterativePreorder(tree.root);
+                cout << "\nIterative Postorder: "; tree.iterativePostorder(tree.root);
+                cout << endl;
+                break;
+        }
+    } while (choice != 4);
+
+    return 0;
+}
+
+1. Theory: Why AVL Trees?
+
+In a standard BST, if you insert numbers in sorted order (1, 2, 3, 4...), the tree becomes a skewed line. This ruins the performance, turning O(logn) operations into O(n).
+
+An AVL Tree prevents this by ensuring that for every node, the heights of the left and right subtrees differ by at most one. This difference is called the Balance Factor.
+
+Balance Factor (BF)
+BF(node)=Height(LeftSubtree)−Height(RightSubtree)
+
+An AVL node is considered balanced if:
+
+BF∈{−1,0,1}
+
+If BF>1 or BF<−1, the tree becomes unbalanced and requires a rotation.
+
+2. Algorithm: Self-Balancing Logic
+
+The insert function in your code follows these steps:
+
+Standard BST Insert
+Perform a normal recursive insertion.
+Update Height
+As recursion unwinds, update the height of every ancestor node.
+Check Balance
+Compute the balance factor for each ancestor node.
+Rebalance (Four Cases)
+If the node is unbalanced, identify the imbalance type and apply rotations.
+3. Rebalancing Cases (The Four Rotations)
+Case	Condition	Action
+Left-Left (LL)	balance > 1 and val < left->data	Single Right Rotation
+Right-Right (RR)	balance < -1 and val > right->data	Single Left Rotation
+Left-Right (LR)	balance > 1 and val > left->data	Left Rotate child, then Right Rotate current
+Right-Left (RL)	balance < -1 and val < right->data	Right Rotate child, then Left Rotate current
+4. Key Operations: Rotations
+
+Rotations are pointer-swapping operations that change the structure of the tree without changing the sorted order of elements.
+
+Right Rotation (rightRotate)
+
+Used when the left subtree is too heavy.
+
+The left child becomes the new root of the subtree.
+The old root becomes the right child of the new root.
+Any existing right subtree of the new root is shifted to the left of the old root.
+5. Complexity & Performance
+Operation	Standard BST (Worst Case)	AVL Tree (Worst Case)
+Search	O(n)	O(logn)
+Insertion	O(n)	O(logn)
+Deletion	O(n)	O(logn)

@@ -1,0 +1,174 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <bitset>
+#include <climits>
+
+using namespace std;
+
+class BloomFilter {
+private:
+    static const int m = 1000; 
+    bitset<m> bits;
+
+    int h1(string s) {
+        unsigned long hash = 5381;
+        for (char c : s) {
+            hash = ((hash << 5) + hash) + c;
+        }
+        return hash % m;
+    }
+
+    int h2(string s) {
+        unsigned long hash = 0;
+        for (char c : s) {
+            hash = (hash * 31) + c;
+        }
+        return hash % m;
+    }
+
+public:
+    BloomFilter() {
+        bits.reset();
+    }
+
+    void add(string s) {
+        bits.set(h1(s));
+        bits.set(h2(s));
+    }
+
+    bool check(string s) {
+        return bits.test(h1(s)) && bits.test(h2(s));
+    }
+};
+
+class CountMinSketch {
+private:
+    int w, d;
+    vector<vector<int>> sketch;
+
+    int getHash(string s, int seed) {
+        unsigned long h = seed;
+        for (char c : s) {
+            h = (h * 131) + c;
+        }
+        return h % w;
+    }
+
+public:
+    CountMinSketch(int width, int depth) : w(width), d(depth) {
+        sketch.resize(d, vector<int>(w, 0));
+    }
+
+    void increment(string s) {
+        for (int i = 0; i < d; i++) {
+            int pos = getHash(s, i + 1);
+            sketch[i][pos]++;
+        }
+    }
+
+    int getFreq(string s) {
+        int res = INT_MAX;
+        for (int i = 0; i < d; i++) {
+            int pos = getHash(s, i + 1);
+            if (sketch[i][pos] < res) {
+                res = sketch[i][pos];
+            }
+        }
+        return res;
+    }
+};
+
+int main() {
+    BloomFilter bf;
+    CountMinSketch cms(100, 5);
+    int op;
+    string input;
+
+    while (true) {
+        cout << "\n1. Bloom Insert\n2. Bloom Check\n3. CMS Update\n4. CMS Estimate\n5. Exit\nChoice: ";
+        cin >> op;
+
+        if (op == 5) break;
+
+        cout << "Enter string: ";
+        cin >> input;
+
+        switch (op) {
+            case 1:
+                bf.add(input);
+                cout << "Added to filter." << endl;
+                break;
+            case 2:
+                if (bf.check(input)) cout << "Might be present." << endl;
+                else cout << "Not present." << endl;
+                break;
+            case 3:
+                cms.increment(input);
+                cout << "Frequency updated." << endl;
+                break;
+            case 4:
+                cout << "Estimated count: " << cms.getFreq(input) << endl;
+                break;
+            default:
+                cout << "Invalid choice." << endl;
+        }
+    }
+    return 0;
+}
+
+1. Bloom Filter (Membership Testing)
+
+A Bloom Filter tells you if an element is in a set. It is incredibly space-efficient but has a unique catch: it can have false positives, but never false negatives.
+
+Theory
+False Positive: It might say "Yes, this is in the set" when it actually isn’t.
+No False Negatives: If it says "No, this is not in the set," you can be 100% sure it isn’t there.
+Algorithm
+Initialize:
+Start with a bit array of size m (1000 in your code), all set to 0.
+Add:
+To add a string, run it through multiple hash functions (your code uses h1 and h2).
+Set the bits at those resulting indices to 1.
+Check:
+To check if a string exists, hash it again.
+If all bits at those indices are 1, it might be there.
+If even one bit is 0, it definitely isn’t.
+2. Count-Min Sketch (Frequency Estimation)
+
+While a Bloom Filter tracks existence, a Count-Min Sketch tracks frequency (how many times an item has appeared).
+
+Theory
+
+It is essentially a 2D version of a Bloom Filter. Since different strings might hash to the same spot (collision), the count might be overestimated, but it will never be underestimated.
+
+Algorithm
+Structure:
+A 2D table (matrix) of width w and depth d.
+Increment:
+When a string appears:
+Hash the string d times (once for each row).
+Increment the counter at the specific column for each row.
+Estimate (Query):
+To find the frequency:
+Look at the values in the d rows for that string.
+Return the minimum value found.
+
+Why minimum?
+Because collisions cause values to increase; the smallest value is the one least affected by noise from other strings.
+
+3. Comparison of Probabilistic Structures
+Feature	Bloom Filter	Count-Min Sketch
+Primary Goal	Membership (Is it there?)	Frequency (How many times?)
+Storage	Bitset (0s and 1s)	Integer Matrix
+Error Type	False Positives	Overestimation
+Memory	Minimal (bits)	Low (integers)
+Use Case	Preventing expensive disk lookups	Tracking trending hashtags, DDoS detection
+4. Analysis of Your Hash Functions
+h1 (DJB2 Hash)
+Uses the constant 5381
+Famous, fast string hash function
+Provides good distribution
+h2 (Polynomial Rolling Hash)
+Uses a prime multiplier (31)
+Standard approach used in Java’s String.hashCode()

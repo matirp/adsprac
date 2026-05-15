@@ -1,0 +1,230 @@
+#include <iostream>
+#include <stack>
+#include <vector>
+
+using namespace std;
+
+struct Node {
+    int data;
+    Node *left, *right;
+    bool lbit, rbit;
+
+    Node(int val) {
+        data = val;
+        left = right = nullptr;
+        lbit = rbit = 1;
+    }
+};
+
+class TBT {
+public:
+    Node* root;
+    Node* dummy;
+
+    TBT() {
+        dummy = new Node(-999);
+        dummy->left = dummy->right = dummy;
+        dummy->lbit = 1;
+        dummy->rbit = 0;
+        root = nullptr;
+    }
+
+    void insert(int val) {
+        if (root == nullptr) {
+            root = new Node(val);
+            root->left = dummy;
+            root->right = dummy;
+            dummy->left = root;
+            dummy->lbit = 0;
+            return;
+        }
+
+        Node* curr = root;
+        while (true) {
+            if (val < curr->data) {
+                if (curr->lbit == 0) {
+                    curr = curr->left;
+                } else {
+                    Node* newNode = new Node(val);
+                    newNode->left = curr->left;
+                    newNode->right = curr;
+                    curr->left = newNode;
+                    curr->lbit = 0;
+                    break;
+                }
+            } else {
+                if (curr->rbit == 0) {
+                    curr = curr->right;
+                } else {
+                    Node* newNode = new Node(val);
+                    newNode->right = curr->right;
+                    newNode->left = curr;
+                    curr->right = newNode;
+                    curr->rbit = 0;
+                    break;
+                }
+            }
+        }
+    }
+
+    void recursiveInorder(Node* node) {
+        if (node == dummy || node == nullptr) return;
+        if (node->lbit == 0) recursiveInorder(node->left);
+        cout << node->data << " ";
+        if (node->rbit == 0) recursiveInorder(node->right);
+    }
+
+    void recursivePreorder(Node* node) {
+        if (node == dummy || node == nullptr) return;
+        cout << node->data << " ";
+        if (node->lbit == 0) recursivePreorder(node->left);
+        if (node->rbit == 0) recursivePreorder(node->right);
+    }
+
+    void recursivePostorder(Node* node) {
+        if (node == dummy || node == nullptr) return;
+        if (node->lbit == 0) recursivePostorder(node->left);
+        if (node->rbit == 0) recursivePostorder(node->right);
+        cout << node->data << " ";
+    }
+
+    void iterativeInorder() {
+        Node* curr = root;
+        while (curr->lbit == 0) curr = curr->left;
+
+        while (curr != dummy) {
+            cout << curr->data << " ";
+            if (curr->rbit == 1) {
+                curr = curr->right;
+            } else {
+                curr = curr->right;
+                while (curr->lbit == 0) curr = curr->left;
+            }
+        }
+    }
+
+    void iterativePreorder() {
+        Node* curr = root;
+        while (curr != dummy) {
+            cout << curr->data << " ";
+            if (curr->lbit == 0) {
+                curr = curr->left;
+            } else if (curr->rbit == 0) {
+                curr = curr->right;
+            } else {
+                while (curr != dummy && curr->rbit == 1) curr = curr->right;
+                if (curr != dummy) curr = curr->right;
+            }
+        }
+    }
+
+    void iterativePostorder() {
+        if (root == nullptr) return;
+        stack<Node*> s1, s2;
+        s1.push(root);
+        while (!s1.empty()) {
+            Node* curr = s1.top();
+            s1.pop();
+            s2.push(curr);
+            if (curr->lbit == 0) s1.push(curr->left);
+            if (curr->rbit == 0) s1.push(curr->right);
+        }
+        while (!s2.empty()) {
+            cout << s2.top()->data << " ";
+            s2.pop();
+        }
+    }
+};
+
+int main() {
+    TBT tree;
+    int choice, val;
+
+    do {
+        cout << "\n--- TBT Operations Menu ---";
+        cout << "\n1. Insert Node";
+        cout << "\n2. Recursive Traversals";
+        cout << "\n3. Non-Recursive Traversals";
+        cout << "\n4. Exit";
+        cout << "\nEnter Choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                cout << "Enter value: ";
+                cin >> val;
+                tree.insert(val);
+                break;
+            case 2:
+                cout << "\nInorder: "; tree.recursiveInorder(tree.root);
+                cout << "\nPreorder: "; tree.recursivePreorder(tree.root);
+                cout << "\nPostorder: "; tree.recursivePostorder(tree.root);
+                cout << endl;
+                break;
+            case 3:
+                cout << "\nIterative Inorder: "; tree.iterativeInorder();
+                cout << "\nIterative Preorder: "; tree.iterativePreorder();
+                cout << "\nIterative Postorder: "; tree.iterativePostorder();
+                cout << endl;
+                break;
+        }
+    } while (choice != 4);
+
+    return 0;
+}
+
+
+1. Theory: What is a Threaded Binary Tree?
+
+In a normal binary tree, about half of the child pointers (left and right) are NULL. A Threaded Binary Tree replaces these null pointers with threads that point to the node’s Inorder Predecessor or Inorder Successor.
+
+Key Components
+1. The Threads
+If a node has no left child, its left pointer points to its Inorder Predecessor.
+If a node has no right child, its right pointer points to its Inorder Successor.
+2. The Bits (lbit and rbit)
+
+Since a pointer can now be either a real child link or a thread, we use flags:
+
+0 → Pointer is a link to a real child node
+1 → Pointer is a thread to predecessor/successor
+3. The Dummy Node
+
+A permanent anchor node used to simplify boundary conditions (like the predecessor of the smallest node and successor of the largest node).
+
+2. Algorithms and Logic
+A. Insertion Logic
+
+When inserting a new node, we do not set pointers to NULL. Instead, we thread the node into the inorder sequence.
+
+If inserted as Left Child:
+New node’s left thread points to the parent’s predecessor
+New node’s right thread points to the parent
+If inserted as Right Child:
+New node’s right thread points to the parent’s successor
+New node’s left thread points to the parent
+Update the parent’s bit (lbit or rbit) from 1 to 0 to show it now has a real child.
+B. Iterative Inorder Traversal (The "Magic" of TBT)
+
+In a normal tree, iterative inorder requires a stack.
+In a Threaded Binary Tree, inorder traversal is done in O(1) extra space.
+
+Algorithm
+Go to the leftmost node of the tree.
+While the current node is not the dummy:
+Print the data.
+If rbit == 1 → follow the thread (direct successor).
+If rbit == 0 → go to the right child, then find the leftmost node in that subtree.
+C. Iterative Preorder Traversal
+Algorithm
+While the current node is not the dummy:
+Print the data.
+If a left child exists, move left.
+Else if a right child exists, move right.
+Else follow right threads until you find a node that has a real right child, then move to that child.
+3. Comparative Advantages
+Feature	Standard BST	Threaded BST (Your Code)
+Memory usage	Wasted null pointers	Null pointers used for threads
+Inorder Traversal	Needs Stack/Recursion (O(n) space)	O(1) extra space (no stack)
+Complexity	Simple logic	More complex insertion/deletion
+Traversal Speed	Slower (backtracking needed)	Faster (direct successor links)

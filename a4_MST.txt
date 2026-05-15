@@ -1,0 +1,191 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+struct Edge {
+    int u, v, weight;
+};
+
+bool compareEdges(Edge a, Edge b) {
+    return a.weight < b.weight;
+}
+
+class Graph {
+    int V;
+    vector<vector<int>> adjMatrix;
+    vector<Edge> edges;
+
+public:
+    Graph(int vertices) {
+        V = vertices;
+        adjMatrix.resize(V, vector<int>(V, 0));
+    }
+
+    void addEdge(int u, int v, int w) {
+        adjMatrix[u][v] = w;
+        adjMatrix[v][u] = w;
+        edges.push_back({u, v, w});
+    }
+
+    void primsMST() {
+        vector<int> key(V, INT_MAX);
+        vector<int> parent(V, -1);
+        vector<bool> inMST(V, false);
+
+        key[0] = 0;
+
+        for (int count = 0; count < V - 1; count++) {
+            int min = INT_MAX, u;
+
+            for (int v = 0; v < V; v++) {
+                if (!inMST[v] && key[v] < min) {
+                    min = key[v], u = v;
+                }
+            }
+
+            inMST[u] = true;
+
+            for (int v = 0; v < V; v++) {
+                if (adjMatrix[u][v] && !inMST[v] && adjMatrix[u][v] < key[v]) {
+                    parent[v] = u;
+                    key[v] = adjMatrix[u][v];
+                }
+            }
+        }
+
+        int totalWeight = 0;
+        cout << "\nEdge \tWeight\n";
+        for (int i = 1; i < V; i++) {
+            cout << parent[i] << " - " << i << " \t" << adjMatrix[i][parent[i]] << endl;
+            totalWeight += adjMatrix[i][parent[i]];
+        }
+        cout << "Total MST Weight (Prim's): " << totalWeight << endl;
+    }
+
+    int find(vector<int>& parent, int i) {
+        if (parent[i] == -1) return i;
+        return find(parent, parent[i]);
+    }
+
+    void unite(vector<int>& parent, int x, int y) {
+        int xset = find(parent, x);
+        int yset = find(parent, y);
+        if (xset != yset) parent[xset] = yset;
+    }
+
+    void kruskalsMST() {
+        sort(edges.begin(), edges.end(), compareEdges);
+
+        vector<int> parent(V, -1);
+        vector<Edge> result;
+        int totalWeight = 0;
+
+        for (Edge& edge : edges) {
+            int x = find(parent, edge.u);
+            int y = find(parent, edge.v);
+
+            if (x != y) {
+                result.push_back(edge);
+                unite(parent, x, y);
+                totalWeight += edge.weight;
+            }
+        }
+
+        cout << "\nEdge \tWeight\n";
+        for (Edge& edge : result) {
+            cout << edge.u << " - " << edge.v << " \t" << edge.weight << endl;
+        }
+        cout << "Total MST Weight (Kruskal's): " << totalWeight << endl;
+    }
+};
+
+int main() {
+    int V, E;
+    cout << "Enter number of vertices: ";
+    cin >> V;
+    cout << "Enter number of edges: ";
+    cin >> E;
+
+    Graph g(V);
+
+    for (int i = 0; i < E; i++) {
+        int u, v, w;
+        cout << "Enter edge (u v w): ";
+        cin >> u >> v >> w;
+        g.addEdge(u, v, w);
+    }
+
+    int choice;
+    do {
+        cout << "\n--- MST Menu ---";
+        cout << "\n1. Prim's Algorithm";
+        cout << "\n2. Kruskal's Algorithm";
+        cout << "\n3. Exit";
+        cout << "\nEnter choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                g.primsMST();
+                break;
+            case 2:
+                g.kruskalsMST();
+                break;
+        }
+    } while (choice != 3);
+
+    return 0;
+}
+
+1. Theory: What is a Minimum Spanning Tree?
+
+A Spanning Tree is a subset of a graph that includes all vertices, connected together, without any cycles.
+A Minimum Spanning Tree (MST) is the spanning tree where the total sum of edge weights is minimum.
+
+Properties of MST
+Vertices (V): All must be included
+Edges (E): Exactly V−1 edges
+No Cycles: It must form a tree structure
+2. Prim’s Algorithm (Vertex-Centric)
+
+Prim’s algorithm builds the MST by growing it from a starting node, one vertex at a time.
+It is a Greedy Algorithm.
+
+Logic
+Start with an arbitrary node (usually index 0).
+Maintain two sets:
+Vertices already in MST
+Vertices not yet included
+Consider all edges connecting MST vertices to non-MST vertices.
+Pick the minimum weight edge.
+Add the new vertex into MST.
+Repeat until all vertices are included.
+Your Implementation Uses
+key[]: Stores the minimum weight edge connecting a vertex to the MST
+parent[]: Stores the structure of the MST
+inMST[]: Boolean array to track visited vertices
+3. Kruskal’s Algorithm (Edge-Centric)
+
+Kruskal’s algorithm focuses on edges. It treats every node as an individual tree and gradually merges them.
+
+Logic
+Sort all edges in non-decreasing order of weight.
+Pick the smallest edge.
+Check if adding it creates a cycle (using Union-Find / DSU).
+If no cycle forms, include the edge in MST.
+Repeat until MST has exactly V−1 edges.
+Your Implementation Uses
+find(): Recursively finds the root of a set (cycle detection)
+unite(): Merges two sets when a valid edge is found
+sort(): Essential greedy step to process smallest edges first
+4. Comparison of Algorithms
+Feature	Prim’s Algorithm	Kruskal’s Algorithm
+Approach	Grows a single tree from a root	Merges separate components (forest)
+Best For	Dense Graphs (many edges)	Sparse Graphs (fewer edges)
+Complexity	O(V
+2
+) (Matrix) or O(ElogV)	O(ElogE) or O(ElogV)
+Data Structure	Priority Queue / Adjacency Matrix	DSU (Union-Find) + Sorting

@@ -1,0 +1,180 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+void maxHeapify(vector<int>& arr, int n, int i) {
+    int largest = i;
+    int l = 2 * i + 1;
+    int r = 2 * i + 2;
+
+    if (l < n && arr[l] > arr[largest])
+        largest = l;
+
+    if (r < n && arr[r] > arr[largest])
+        largest = r;
+
+    if (largest != i) {
+        swap(arr[i], arr[largest]);
+        maxHeapify(arr, n, largest);
+    }
+}
+
+void minHeapify(vector<int>& arr, int n, int i) {
+    int smallest = i;
+    int l = 2 * i + 1;
+    int r = 2 * i + 2;
+
+    if (l < n && arr[l] < arr[smallest])
+        smallest = l;
+
+    if (r < n && arr[r] < arr[smallest])
+        smallest = r;
+
+    if (smallest != i) {
+        swap(arr[i], arr[smallest]);
+        minHeapify(arr, n, smallest);
+    }
+}
+
+void heapSortAscending(vector<int> arr) {
+    int n = arr.size();
+
+    for (int i = n / 2 - 1; i >= 0; i--)
+        maxHeapify(arr, n, i);
+
+    for (int i = n - 1; i > 0; i--) {
+        swap(arr[0], arr[i]);
+        maxHeapify(arr, i, 0);
+    }
+
+    for (int x : arr) cout << x << " ";
+    cout << endl;
+}
+
+void heapSortDescending(vector<int> arr) {
+    int n = arr.size();
+
+    for (int i = n / 2 - 1; i >= 0; i--)
+        minHeapify(arr, n, i);
+
+    for (int i = n - 1; i > 0; i--) {
+        swap(arr[0], arr[i]);
+        minHeapify(arr, i, 0);
+    }
+
+    for (int x : arr) cout << x << " ";
+    cout << endl;
+}
+
+int main() {
+    int n, val;
+    cout << "Enter number of elements: ";
+    cin >> n;
+
+    vector<int> data;
+    cout << "Enter " << n << " elements: ";
+    for (int i = 0; i < n; i++) {
+        cin >> val;
+        data.push_back(val);
+    }
+
+    int choice;
+    do {
+        cout << "\n--- Heap Sort Menu ---";
+        cout << "\n1. Sort Ascending\n2. Sort Descending\n3. Exit";
+        cout << "\nEnter Choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                cout << "Ascending: ";
+                heapSortAscending(data);
+                break;
+            case 2:
+                cout << "Descending: ";
+                heapSortDescending(data);
+                break;
+        }
+    } while (choice != 3);
+
+    return 0;
+}
+
+1. Theory: What is a Binary Heap?
+
+A Binary Heap is a complete binary tree where the nodes are stored in a specific order:
+
+Max-Heap: The value of the root node must be the greatest among all its children. This property must be recursively true for all subtrees.
+Min-Heap: The value of the root node must be the smallest among all its children. This property must be recursively true for all subtrees.
+Array Representation
+
+Since a heap is a complete binary tree, it can be efficiently represented as an array.
+
+For a node at index i:
+
+Left Child: 2i+1
+Right Child: 2i+2
+Parent: ⌊
+2
+i−1
+	​
+
+⌋
+2. Algorithm: How Heap Sort Works
+
+Heap Sort works in two main phases:
+
+Phase A: Building the Heap (Heapify)
+
+We start from the last non-leaf node (index n/2−1) and work upward to the root.
+For each node, we call heapify() to ensure the heap property is satisfied.
+
+To sort in ascending order, build a Max-Heap
+To sort in descending order, build a Min-Heap
+Phase B: Sorting
+
+Once the heap is built:
+
+The largest (or smallest) element is at the root (index 0)
+Swap the root with the last element of the array
+Reduce heap size by 1
+Heapify the root again to restore heap property
+Repeat until heap size becomes 1
+3. Analysis of Functions
+maxHeapify() / minHeapify()
+
+This is the core recursive function.
+
+It compares a node with its children
+If a child violates heap order:
+For Max-Heap, swap with the larger child
+For Min-Heap, swap with the smaller child
+Continue heapifying downward until the heap property is restored
+
+This ensures the heavier/lighter values move to their correct positions.
+
+heapSortAscending()
+Constructs a Max-Heap (largest element at arr[0])
+Moves the largest element to the end of the array repeatedly
+After completion, the array becomes sorted in increasing order
+4. Complexity & Performance
+Metric	Complexity	Why?
+Time (Best/Avg/Worst)	O(nlogn)	Heap build is O(n), and n heapify operations take O(logn) each
+Space	O(1)	In-place sorting (excluding recursion stack)
+Stability	Not Stable	Swaps can change the order of equal elements
+Comparison with Other Sorts
+
+Unlike Quick Sort, Heap Sort has a guaranteed:
+
+O(nlogn)
+
+worst-case time complexity, making it reliable when worst-case performance matters.
+
+However, in practice, Quick Sort is often faster due to better cache locality.
+
+Important Note
+
+The Heap used in Heap Sort is completely different from the Heap memory used in dynamic allocation.
+One is a data structure, the other is a memory region.
